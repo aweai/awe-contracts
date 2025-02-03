@@ -28,6 +28,7 @@ import {
     createMintToCheckedInstruction,
     createApproveCheckedInstruction,
     createSetAuthorityInstruction,
+    createTransferCheckedInstruction,
     AuthorityType
 } from "@solana/spl-token";
 
@@ -361,4 +362,77 @@ const revokeMintAuthority = async (
     );
 };
 
-export { createAweTokenWithMetadata, mintAweToken, getOrCreateAssociatedTokenAccount, approve, revokeMintAuthority };
+const batchTransferAweToken = async (
+    aweMintAddress: PublicKey,
+    addresses: PublicKey[],
+    amounts: BN[],
+    provider: AnchorProvider
+) => {
+
+    if (addresses.length != amounts.length) {
+        console.error("mismatched addresses and amounts")
+        return
+    }
+
+    const sourceTokenAccountAddress = await getAssociatedTokenAddress(
+        aweMintAddress,
+        provider.publicKey,
+        false,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    let ixs = [];
+
+    for(let i=0, l=addresses.length; i<l; i++) {
+        const address = addresses[i]
+        const amount = BigInt(amounts[i].toString(10))
+
+        const destTokenAccount = await getAssociatedTokenAddress(
+            aweMintAddress,
+            address,
+            false,
+            TOKEN_2022_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+        );
+
+        try {
+            await getAccount(
+                provider.connection,
+                destTokenAccount,
+                "confirmed",
+                TOKEN_2022_PROGRAM_ID
+            );
+
+        } catch (e) {
+            if (e instanceof TokenAccountNotFoundError) {
+                const ixCreateTokenAccount = createAssociatedTokenAccountInstruction(
+                    provider.publicKey,
+                    destTokenAccount,
+                    address,
+                    aweMintAddress,
+                    TOKEN_2022_PROGRAM_ID,
+                    ASSOCIATED_TOKEN_PROGRAM_ID,
+                )
+                ixs.push(ixCreateTokenAccount)
+            } else {
+                throw e
+            }
+        }
+
+        const ixTransfer = createTransferCheckedInstruction(
+            sourceTokenAccountAddress,
+            aweMintAddress,
+            destTokenAccount,
+            provider.publicKey,
+            amount,
+            9,
+            null,
+            TOKEN_2022_PROGRAM_ID,
+        )
+
+        ixs.push(ixTransfer)
+    }
+}
+
+export { createAweTokenWithMetadata, mintAweToken, getOrCreateAssociatedTokenAccount, approve, revokeMintAuthority, batchTransferAweToken };

@@ -19,6 +19,7 @@ metadata = "yarn run ts-node client/setup_awe_metadata.ts"
 agent = "yarn run ts-node client/test_awe_agent.ts"
 mint = "yarn run ts-node client/mint_awe.ts"
 wallet = "yarn run ts-node client/create_wallet.ts"
+batch_transfer = "yarn run ts-node client/batch_transfer_awe.ts"
 
 [toolchain]
 anchor_version = "0.30.1"
