@@ -26,7 +26,9 @@ import {
     TokenAccountNotFoundError,
     createAssociatedTokenAccountInstruction,
     createMintToCheckedInstruction,
-    createApproveCheckedInstruction
+    createApproveCheckedInstruction,
+    createSetAuthorityInstruction,
+    AuthorityType
 } from "@solana/spl-token";
 
 import {
@@ -50,12 +52,10 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
     const decimals = 9;
     // Authority that can mint new tokens
     const mintAuthority = wallet.publicKey;
-    // Authority that can update the metadata pointer and token metadata
-    const updateAuthority = wallet.publicKey;
 
     // Metadata to store in Mint Account
     const metaData: TokenMetadata = {
-        updateAuthority: updateAuthority,
+        updateAuthority: null,
         mint: mint,
         name: "Awe! Token",
         symbol: "AWE",
@@ -89,7 +89,7 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
     const initializeMetadataPointerInstruction =
         createInitializeMetadataPointerInstruction(
             mint, // Mint Account address
-            updateAuthority, // Authority that can set the metadata address
+            null, // Authority that can set the metadata address
             mint, // Account address that holds the metadata
             TOKEN_2022_PROGRAM_ID,
         );
@@ -107,7 +107,7 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
     const initializeMetadataInstruction = createInitializeInstruction({
         programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
         metadata: mint, // Account address that holds the metadata
-        updateAuthority: updateAuthority, // Authority that can update the metadata
+        updateAuthority: null, // Authority that can update the metadata
         mint: mint, // Mint Account address
         mintAuthority: mintAuthority, // Designated Mint Authority
         name: metaData.name,
@@ -323,4 +323,34 @@ const approve = async (
     );
 };
 
-export { createAweTokenWithMetadata, mintAweToken, getOrCreateAssociatedTokenAccount, approve };
+const revokeMintAuthority = async (
+    aweMintAddress: PublicKey,
+    provider: AnchorProvider) => {
+
+    const connection = provider.connection;
+    const wallet = provider.wallet;
+
+    const recentBlockhash = await connection.getLatestBlockhash();
+
+    let tx = new Transaction({
+        lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
+        blockhash: recentBlockhash.blockhash,
+        feePayer: wallet.publicKey
+    }).add(
+        createSetAuthorityInstruction(
+            aweMintAddress,
+            wallet.publicKey,
+            AuthorityType.MintTokens,
+            null
+        )
+    )
+
+    const txSignature = await provider.sendAndConfirm(tx);
+
+    console.log(
+        "\nRevoke mint authority:",
+        `https://solana.fm/tx/${txSignature}?cluster=devnet-solana`,
+    );
+};
+
+export { createAweTokenWithMetadata, mintAweToken, getOrCreateAssociatedTokenAccount, approve, revokeMintAuthority };
