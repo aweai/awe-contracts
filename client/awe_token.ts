@@ -31,7 +31,6 @@ import {
 
 import {
     createInitializeInstruction,
-    createUpdateFieldInstruction,
     pack,
     TokenMetadata,
 } from "@solana/spl-token-metadata";
@@ -58,10 +57,10 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
     const metaData: TokenMetadata = {
         updateAuthority: updateAuthority,
         mint: mint,
-        name: "AWE",
+        name: "Awe! Token",
         symbol: "AWE",
-        uri: "",
-        additionalMetadata: [["description", "AI Interactive Meme Generator"]],
+        uri: "https://aweai.fun/token-metadata.json",
+        additionalMetadata: [],
     };
 
     // Size of MetadataExtension 2 bytes for type, 2 bytes for length
@@ -116,15 +115,6 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
         uri: metaData.uri,
     });
 
-    // Instruction to update metadata, adding custom field
-    const updateFieldInstruction = createUpdateFieldInstruction({
-        programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
-        metadata: mint, // Account address that holds the metadata
-        updateAuthority: updateAuthority, // Authority that can update the metadata
-        field: metaData.additionalMetadata[0][0], // key
-        value: metaData.additionalMetadata[0][1], // value
-    });
-
     // Add instructions to new transaction
     const transaction = new Transaction({
         lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
@@ -135,7 +125,6 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
         initializeMetadataPointerInstruction,
         initializeMintInstruction,
         initializeMetadataInstruction,
-        updateFieldInstruction,
     );
 
     const txSignature = await provider.sendAndConfirm(
