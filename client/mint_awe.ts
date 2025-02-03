@@ -1,13 +1,11 @@
 import * as anchor from "@coral-xyz/anchor"
 import * as dotenv from "dotenv"
 import { PublicKey } from "@solana/web3.js";
-import type { Awe } from "../target/types/awe";
 import { mintAweToken } from "./awe_token"
 
 (async () => {
     anchor.setProvider(anchor.AnchorProvider.env());
-    const program = anchor.workspace.Awe as anchor.Program<Awe>;
-
+    const provider = anchor.AnchorProvider.env()
     dotenv.config({ path: ".env" })
 
     if (!process.env["AWE_MINT_ADDRESS"]) {
@@ -30,7 +28,7 @@ import { mintAweToken } from "./awe_token"
         aweMintAddress,
         walletPubKey,
         amountBN,
-        program.provider as anchor.AnchorProvider
+        provider
     )
 
 })().catch((e) => console.log(e))
