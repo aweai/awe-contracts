@@ -33,6 +33,7 @@ import {
 
 import {
     createInitializeInstruction,
+    createUpdateAuthorityInstruction,
     pack,
     TokenMetadata,
 } from "@solana/spl-token-metadata";
@@ -55,7 +56,6 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
 
     // Metadata to store in Mint Account
     const metaData: TokenMetadata = {
-        updateAuthority: null,
         mint: mint,
         name: "Awe! Token",
         symbol: "AWE",
@@ -107,13 +107,20 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
     const initializeMetadataInstruction = createInitializeInstruction({
         programId: TOKEN_2022_PROGRAM_ID, // Token Extension Program as Metadata Program
         metadata: mint, // Account address that holds the metadata
-        updateAuthority: null, // Authority that can update the metadata
+        updateAuthority: wallet.publicKey, // Authority that can update the metadata
         mint: mint, // Mint Account address
         mintAuthority: mintAuthority, // Designated Mint Authority
         name: metaData.name,
         symbol: metaData.symbol,
         uri: metaData.uri,
     });
+
+    const removeUpdateAuthorityInstruction = createUpdateAuthorityInstruction({
+        programId: TOKEN_2022_PROGRAM_ID,
+        metadata: mint,
+        oldAuthority: wallet.publicKey,
+        newAuthority: null
+    })
 
     // Add instructions to new transaction
     const transaction = new Transaction({
@@ -125,6 +132,7 @@ const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
         initializeMetadataPointerInstruction,
         initializeMintInstruction,
         initializeMetadataInstruction,
+        removeUpdateAuthorityInstruction
     );
 
     const txSignature = await provider.sendAndConfirm(

@@ -14,6 +14,7 @@ import { PublicKey } from "@solana/web3.js";
     aweMintAddress = new PublicKey(process.env["AWE_MINT_ADDRESS"])
     console.log("Loaded Mint Address: ", aweMintAddress.toBase58())
   } else {
+    console.log("Creating new Mint Address...")
     aweMintAddress = await createAweTokenWithMetadata(provider)
     console.log("Created Mint Address: ", aweMintAddress.toBase58())
   }
