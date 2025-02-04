@@ -39,6 +39,8 @@ import {
     TokenMetadata,
 } from "@solana/spl-token-metadata";
 
+import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+
 // Create a new token (Mint Account)
 const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
 
@@ -364,15 +366,19 @@ const revokeMintAuthority = async (
 
 const batchTransferAweToken = async (
     aweMintAddress: PublicKey,
-    addresses: PublicKey[],
+    addresses: string[],
     amounts: BN[],
     provider: AnchorProvider
 ) => {
 
     if (addresses.length != amounts.length) {
-        console.error("mismatched addresses and amounts")
-        return
+        throw new Error("mismatched addresses and amounts")
     }
+
+    const connection = provider.connection
+    const wallet = provider.wallet
+
+    const recentBlockhash = await connection.getLatestBlockhash()
 
     const sourceTokenAccountAddress = await getAssociatedTokenAddress(
         aweMintAddress,
@@ -380,12 +386,12 @@ const batchTransferAweToken = async (
         false,
         TOKEN_2022_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID
-    );
+    )
 
-    let ixs = [];
+    let ixs = []
 
     for(let i=0, l=addresses.length; i<l; i++) {
-        const address = addresses[i]
+        const address = new PublicKey(addresses[i])
         const amount = BigInt(amounts[i].toString(10))
 
         const destTokenAccount = await getAssociatedTokenAddress(
@@ -394,7 +400,7 @@ const batchTransferAweToken = async (
             false,
             TOKEN_2022_PROGRAM_ID,
             ASSOCIATED_TOKEN_PROGRAM_ID
-        );
+        )
 
         try {
             await getAccount(
@@ -402,7 +408,7 @@ const batchTransferAweToken = async (
                 destTokenAccount,
                 "confirmed",
                 TOKEN_2022_PROGRAM_ID
-            );
+            )
 
         } catch (e) {
             if (e instanceof TokenAccountNotFoundError) {
@@ -433,6 +439,18 @@ const batchTransferAweToken = async (
 
         ixs.push(ixTransfer)
     }
+
+    let tx = new Transaction({
+        lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
+        blockhash: recentBlockhash.blockhash,
+        feePayer: wallet.publicKey
+    }).add(...ixs)
+
+    console.log("Ready to send tx: " + bs58.encode(tx.signature))
+
+    return ixs
+
+    // return await provider.sendAndConfirm(tx)
 }
 
-export { createAweTokenWithMetadata, mintAweToken, getOrCreateAssociatedTokenAccount, approve, revokeMintAuthority, batchTransferAweToken };
+export { createAweTokenWithMetadata, mintAweToken, getOrCreateAssociatedTokenAccount, approve, revokeMintAuthority, batchTransferAweToken }
