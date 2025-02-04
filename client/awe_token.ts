@@ -39,7 +39,11 @@ import {
     TokenMetadata,
 } from "@solana/spl-token-metadata";
 
-import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+const sleep = () => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, 2000);
+    });
+}
 
 // Create a new token (Mint Account)
 const createAweTokenWithMetadata = async (provider: AnchorProvider) => {
@@ -378,8 +382,6 @@ const batchTransferAweToken = async (
     const connection = provider.connection
     const wallet = provider.wallet
 
-    const recentBlockhash = await connection.getLatestBlockhash()
-
     const sourceTokenAccountAddress = await getAssociatedTokenAddress(
         aweMintAddress,
         provider.publicKey,
@@ -438,13 +440,20 @@ const batchTransferAweToken = async (
         )
 
         ixs.push(ixTransfer)
+        
+        await sleep()
     }
+
+    const recentBlockhash = await connection.getLatestBlockhash()
+    console.log("Recent block hash fetched!")
 
     let tx = new Transaction({
         lastValidBlockHeight: recentBlockhash.lastValidBlockHeight,
         blockhash: recentBlockhash.blockhash,
         feePayer: wallet.publicKey
     }).add(...ixs)
+
+    console.log("Sending the transaction...")
 
     return await provider.sendAndConfirm(tx)
 }

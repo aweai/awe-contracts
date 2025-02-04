@@ -7,6 +7,8 @@ import { promises as fs } from 'fs'
 import { parse } from 'csv-parse/sync'
 
 const batchSize = 10
+const startIdx = 0
+const waitInterval = 30
 
 const isValidRecord = (record) => {
     const address = record[0]
@@ -31,6 +33,12 @@ const isValidRecord = (record) => {
     }
 
     return true
+}
+
+const sleep = (seconds) => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, seconds * 1000);
+    });
 }
 
 (async () => {
@@ -70,7 +78,7 @@ const isValidRecord = (record) => {
     console.log("Total addresses validated: " + totalAddresses)
     console.log("Total amount validated: " + totalAmount.toString(10))
 
-    let currentRecordIdx = 0
+    let currentRecordIdx = startIdx
     let totalTxs = 0
     totalAddresses = 0
     totalAmount = new anchor.BN(0)
@@ -107,6 +115,8 @@ const isValidRecord = (record) => {
 
         currentRecordIdx = batchEnd
         totalTxs++
+
+        await sleep(waitInterval)
     }
 
     console.log("Batch transfer completed!")
