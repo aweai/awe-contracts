@@ -433,7 +433,7 @@ const batchTransferAweToken = async (
             provider.publicKey,
             amount,
             9,
-            null,
+            [],
             TOKEN_2022_PROGRAM_ID,
         )
 
@@ -446,11 +446,7 @@ const batchTransferAweToken = async (
         feePayer: wallet.publicKey
     }).add(...ixs)
 
-    console.log("Ready to send tx: " + bs58.encode(tx.signature))
-
-    return ixs
-
-    // return await provider.sendAndConfirm(tx)
+    return await provider.sendAndConfirm(tx)
 }
 
 export { createAweTokenWithMetadata, mintAweToken, getOrCreateAssociatedTokenAccount, approve, revokeMintAuthority, batchTransferAweToken }

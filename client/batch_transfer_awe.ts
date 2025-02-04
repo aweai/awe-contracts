@@ -6,7 +6,7 @@ import { PublicKey } from "@solana/web3.js"
 import { promises as fs } from 'fs'
 import { parse } from 'csv-parse/sync'
 
-const batchSize = 10;
+const batchSize = 10
 
 const isValidRecord = (record) => {
     const address = record[0]
@@ -95,14 +95,15 @@ const isValidRecord = (record) => {
             totalAmount = totalAmount.add(amount)
         }
 
-        const ixs = await batchTransferAweToken(
+        const tx = await batchTransferAweToken(
             aweMintAddress,
             addresses,
             amounts,
             provider
         )
 
-        console.log("Total instructions in tx: " + ixs.length)
+        console.log("Transaction sent!")
+        console.log(tx)
 
         currentRecordIdx = batchEnd
         totalTxs++
